@@ -1,0 +1,41 @@
+name: Build libbox
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Версия sing-box (тег)"
+        default: "v1.11.15"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: SagerNet/sing-box
+          ref: ${{ inputs.version }}
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install gomobile
+        run: |
+          go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.1.4
+          go install -v github.com/sagernet/gomobile/cmd/gobind@v0.1.4
+
+      - name: Build libbox
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          go run ./cmd/internal/build_libbox -target android
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libbox
+          path: libbox*.aar
